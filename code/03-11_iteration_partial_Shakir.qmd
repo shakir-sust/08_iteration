@@ -81,16 +81,17 @@ summary(nematode)
 ```
 
 ```{r density plot} 
-nematode %>%
-  pivot_longer(cols = mel_s:re) %>% #to create 'long' form from wide 'form'
-  arrange(name) %>%
-  ggplot(aes(x = value)) +
+nematode %>% #we need to reshape this dataset from wide to long for density plots
+  pivot_longer(cols = mel_s:re) %>% #to create 'long' form from wide 'form' #we will have 43*16 = 688 columns that we pivoted into 'long' form
+  arrange(name) %>% #to arrange by 'name' column
+  ggplot(aes(x = value)) + #we feed the previous data right into "ggplot()"
   geom_density() +
-  facet_wrap(~name, scales = "free")
+  facet_wrap(~name, scales = "free") #scales = "free": this argument auto-adjust the scales (on x-axis and y-axis) depending on the plot  #we facet by "name" column
 
 ```
 
 # 3) Function writing - ndvi 
+
 The first step will be to calculate 10 different vegetation indices.  
 
 Vegetation indices represent different ways of combining reflectance data from different bands. One of the main formats of vegetation indices is the **normalized difference vegetation index**, that takes the form of:  
@@ -103,9 +104,9 @@ One example of creating ndvi for the nir and red bands would be:
 ```{r}
 #Manual process
 nematode %>%
-  mutate(rndvi = (nir - r)/(nir + r)) %>% #rndvi = ndvi based on red
-  mutate(bndvi = (nir - b)/(nir + b)) %>%
-  mutate(gndvi = (nir - g)/(nir + g))
+  mutate(rndvi = (nir - r)/(nir + r)) #S%>% #rndvi = ndvi based on red band 
+  #mutate(bndvi = (nir - b)/(nir + b)) %>% #bndvi = ndvi based on blue band 
+  #mutate(gndvi = (nir - g)/(nir + g)) #gndvi = ndvi based on green band 
   
 ```
 
@@ -113,10 +114,11 @@ Since we're going to calculate this for each of the visible-region bands (5 in t
 
 ```{r ndvi function}
 #function() is how r knows that ndvi is a function, and not an object
-ndvi <-function(nir, vis) {
+ndvi <- function(nir, vis) {
   (nir - vis)/ (nir + vis)
 }
-  
+
+#func <- function(x, y) {(x - y)/ (x + y)}
 
 ```
 
@@ -140,10 +142,10 @@ Now that we created a function to help with one type of vegetation index, let's 
 ```{r}
 nematode_w <- nematode %>%
   # Calculating ndvi-based indices
-  mutate(rndvi =ndvi(nir, r),
+  mutate(rndvi = ndvi(nir, r),
          gndvi = ndvi(nir, g),
          bndvi = ndvi(nir, b),
-         rendvi =ndvi(nir, re)
+         rendvi = ndvi(nir, re)
          ) %>%
 
   # Calculating other non-ndvi-based indices
@@ -159,27 +161,38 @@ nematode_w
 ```
 
 # 4) Function writing - CV (Coefficient of Variation)
+
 Now, let's say we wanted to write a function to obtain some statistical summary metrics for each of the new variables we calculated.  
 
 Let's write a function to return to us the mean and coefficient of variation. If you recall, there is no function for CV in R, so let's also create that.  
 
 First, a function for CV.  
+
 ```{r}
+
+#We will create a function to calculate the CV (coefficient of variation) because there is no default R function to calculate CV
+
 meancv <- function(x) {
   # Calculate intermediary steps of mean and sd
-  mean <- mean(x, na.rm = T)
+  mean <- mean(x, na.rm = T) #"mean" on the left side of <- : intermediary object #mean(x (i.e., argument of the function), na.rm = T {i.e., to deal with NA missing values})
   sd <- sd(x, na.rm = T)
   # Calculate cv
   cv <- (sd/mean)*100
   # Combine them into a data frame
-  df <- data.frame(mean = mean,
-                   cv = cv
-                   )
+  df <- data.frame(mean = mean, #1st "mean" (on the left of = ): column name that we choose to assign #2nd "mean" (on the right of = ): the "mean" object {line 177} that the function is creating
+                   cv = cv #1st "cv" (on the left of = ): column name that we choose to assign #2nd "cv" (on the right of = ): the "cv" object {line 180} that the function is creating
+                   ) #because we want this function to return mean and cv as a data frame
+  
   # Return the data frame
   df
 }
 
 meancv
+
+#Difference between "meancv" and "meancv2" functions:
+#"meancv2" is expecting a data frame and is expecting a certain column from that data frame
+#"meancv" is expecting a vector (it is NOT expecting a data frame)
+
 ```
 
 Let's apply it to one of the vegetation indices  
@@ -189,10 +202,17 @@ Let's apply it to one of the vegetation indices
 meancv(nematode_w$rndvi)
 
 ```
-# Important for Assignment on Iteration
 
+# Important for Assignment 8 on Iteration
+
+In the previous "meancv()" function, x inside the function(x) was basically giving a vector, and by calling "meancv(nematode_w$rndvi)", we were giving the "rndvi" vector to the function i.e., we were not giving a data frame itselt, we were giving a column of that data frame already in a vector/column format. A slight variation of this is the following code chunk.
+
+Note: Keyboard shortcut to create a new code chunk: Ctrl + Alt + i (in Windows); Cmd + Opt + i (in mac)
 
 ```{r}
+
+#If you have your arguments that specify the columns inside a data frame, you have to use double curly brackets {{ }} wrapped around that argument in the body of the function so that the function knows to translate the data frame ("df" translates into "nematode_w" data frame) and the column inside that data frame ("col" translates into "rndvi" column) for us.
+
 meancv2 <- function(df, col) {
   # Calculate intermediary steps of mean and sd
   mean <- mean({{df}} %>% pull({{col}}), na.rm = T)
@@ -208,6 +228,11 @@ meancv2 <- function(df, col) {
 }
 
 meancv2
+
+#Difference between "meancv" and "meancv2" functions:
+#"meancv2" is expecting a data frame and is expecting a certain column from that data frame
+#"meancv" is expecting a vector (it is NOT expecting a data frame)
+
 ```
 
 
@@ -222,9 +247,13 @@ ggplot(data = nematode_w,
 
 ```{r}
 
-meancv2(df = nematode_w, #remains same
-        col = sum_s #changes based on what we want to get
+meancv2(df = nematode_w, #df = name of our data frame #remains same
+        col = rndvi #Name of the column that we want to calculate #changes based on what we want to get #If we wanted to get the mean and CV of "sum_s" column, we would specify "sum_s" after "col = " argument
         )
+
+#Difference between "meancv" and "meancv2" functions:
+#"meancv2" is expecting a data frame and is expecting a certain column from that data frame
+#"meancv" is expecting a vector (it is NOT expecting a data frame)
 
 ```
 
@@ -247,19 +276,31 @@ Loops are very useful when **repeating the same task across different scenarios*
 In this case, the **task being repeated is to calculate mean and CV**, and the **different scenarios are the columns**.  
 
 ```{r}
-nematode_w
+
+nematode_w #Just printing so that we can look at the data frame itself
+
+#After looking at the data frame, we decide that we do not need to include "site" and "sampleid" for further analysis i.e., we will only use/start with the 3rd column to all the way to the last (28th) column, and we will achieve this by using a loop
+
 ```
 
 Let's create a for loop to do that for us.  
 First, let's create an empty data frame (e.g., "nematode_meancv", in this case as mentioned in the following code chunk) scaffold to be populated by the results of the loop.  
 
+
 ```{r}
+
+#Now, we will create an empty data frame that has 3 columns: variable, mean, cv so that we can store the values of mean and cv for each variable
+
 nematode_meancv <- data.frame(variable = rep(NA, 26),
                               mean = rep(NA, 26),
                               cv = rep(NA, 26)
                               )
 
+#"rep()" function is used to repeat values 
+#rep(NA, 26): means we are going to repeat NA values 26 times (because we have 26 columns when we start with the 3rd column and continue all the way to the last (28th) column)
+
 nematode_meancv
+
 ```
 
 Each row above will be populated with the name of the variable, its mean and cv.  
@@ -267,20 +308,24 @@ Each row above will be populated with the name of the variable, its mean and cv.
 ```{r}
 
 nematode_w
-ncol(nematode_w) #number of columns in 'nematode_w' data frame
 
-for (i in 3:ncol(nematode_w)) {
+
+ncol(nematode_w) #"ncol()" function: calculates total number of columns in a data frame i.e., 'nematode_w' data frame
+
+#One of the key components of a loop is an indexing letter, often denoted as i
+#Key concept of using a loop: every loop has an index position i
+
+for (i in 3:ncol(nematode_w)) { #i starting in 3, then going all the way to the total number of columns of "nematode_w" which is 28 #using index i allows us to iterate over different components of the data set
   # Getting the name of all columns
-  colnames <- colnames(nematode_w)
+  colnames <- colnames(nematode_w) #"Colnames()" function: prints the list of columns in an object
   # Defining the name of the variable being analyzed in a given loop step
-  varname <- colnames[i]
+  varname <- colnames[i] #"varname" iterates over the column name(s) that we want to calculate the mean and cv for #varname: the name of the column that the loop is working at a particular iteration i #if we specify colnames[3], then its gonna print the name of the 3rd column variable which is "mel_s"
   # Calculating mean and cv
-  statsum <- meancv(nematode_w[[i]])
-
+  statsum <- meancv(nematode_w[[i]]) #"statsum" returns a data frame that has both the mean and cv of that column that has been iterating over #We must specify double third brackets [[]] to use the column(s) inside "nematode_w" as a vector, because the way that we wrote the "meancv" function, it takes only vectors as inputs #if we use only a single third bracket [], it uses a data frame
   # Appending results to the empty data frame  
-  nematode_meancv$variable[[i-2]] <- varname
-  nematode_meancv$mean[[i-2]] <- round(statsum$mean, 3)
-  nematode_meancv$cv[[i-2]] <- round(statsum$cv, 3)
+  nematode_meancv$variable[[i-2]] <- varname #"nematode_meancv$variable[[i-2]]" because we started from the 3rd row in "for (i in 3:ncol(nematode_w))" #If we used "for (i in 3:ncol(nematode_w))", then we would simply specify "nematode_meancv$variable[[i]]", we would not substract 2 from i in that case  #"nematode_meancv" is the empty canvas/data frame that we will use to store our results
+  nematode_meancv$mean[[i-2]] <- round(statsum$mean, 3) #"round(statsum$mean, 3)": to round up to 3 decimal points 
+  nematode_meancv$cv[[i-2]] <- round(statsum$cv, 3) #"round(statsum$cv, 3)": to round up to 3 decimal points 
 
   # Print a message
   print(paste("Finished with variable", varname))
@@ -290,12 +335,14 @@ for (i in 3:ncol(nematode_w)) {
 
 Let's inspect `nematode_meancv`  
 ```{r}
+
 nematode_meancv
+
 ```
 
 # 6) List mapping  
 
-Another way of doing iteration is through mapping a function to different components of a list.  
+Another way of doing iteration is through mapping a function to different components of a list.  (tidyverse way of doing iterative tasks, instead of using a loop)
 
 We can do that with the package `purrr` and some of its functions:  
   - `map(x)` functions take one iterating element, x  
@@ -312,40 +359,44 @@ In the end, we will have **150 models**, and I would like to keep only the one w
 
 This approach creates a bit of a brain-twist, since we are creating data sets (and other object types) inside of the initial data set.  
 
+*The following code chunk is the most important for this exercise.*
+
 
 ```{r}
+
 nematode_mods <- nematode_w %>%
   # Pivotting longer for the response variables
-  pivot_longer(cols = mel_s:eggs_r,
-               names_to = "resp_var",
-               values_to = "resp_val"
+  pivot_longer(cols = mel_s:eggs_r, #to specify only the response variable columns i.e., columns from "mel_s" to "eggs_r"
+               names_to = "resp_var", #specifying how we want to name the new column variable #resp_var = response variables
+               values_to = "resp_val" #specifying how we want to name the new column variable #resp_val = values of the response variable/response values
                ) %>%
   # Pivotting longer for the explanatory variables  
-  pivot_longer(cols = b:nli,
-               names_to = "exp_var",
-               values_to = "exp_val"
+  pivot_longer(cols = b:nli, #to specify only the explanatory variable columns i.e., columns from "b" to "nli"
+               names_to = "exp_var", #specifying how we want to name the new column variable #exp_var = explanatory variables
+               values_to = "exp_val" #specifying how we want to name the new column variable #exp_val = values of the explanatory variable(s)
                ) %>%
   # Creating groups of resp_var and exp_var
-  group_by(resp_var, exp_var) %>%
+  group_by(resp_var, exp_var) %>% #we want to group by 2 variables i.e., "resp_var" and "exp_var"
   nest() %>%
   # Applying linear model to each element
-  mutate(lm = map(data, 
-                  ~lm(data = .x,
-                      formula = resp_val ~ exp_val
+  #"map()" function does not go by itself in a pipe, it has to be associated with a "mutate()"
+  mutate(lm = map(data, #the column (i.e., "data") in the tibble that we want to map i.e., iterate over
+                  ~lm(data = .x, #"data = .x" is the syntax that we must use here # .x , not x
+                      formula = resp_val ~ exp_val #y ~ x: y explained by x # "resp_val ~ exp_val" because "resp_val" and "exp_val" columns contain the numeric values of the reponse and explanatory variables, respectively.
                       )
                   )) %>%
   # Extracting R2 for each element  
-  mutate(r2 = map(lm,
-                  ~summary(.x)$r.squared
+  mutate(r2 = map(lm, #the column (i.e., "lm") that we want to map i.e., iterate over
+                  ~summary(.x)$r.squared #"summary(.x)" because the map() function has only 1 iterating element which we refer to as ".x"
                   ))
 
+nematode_mods
+
+#nematode_mods$r2[1]
 
 
-nematode_mods$r2[1]
-
-
-nematode_mods$data[2] %>%
-  arrange(resp_var, exp_var)
+#nematode_mods$data[2] %>%
+  #arrange(resp_var, exp_var)
 
 ```
 Above we used the `map()` function because we only had one iterating element (i.e., data).  
@@ -353,8 +404,11 @@ Above we used the `map()` function because we only had one iterating element (i.
 Now, let's unnest the r2 values, then only keep the largest r2 for each response variable, and make some plots.  
 
 ```{r}
+
+#We want to keep just 1 model for each one of these 10 nematode variables, which is the model that has the highest R2 for that specific response variable. So, I did all of these 150 models and I want to screen what was the best model in terms of R2 for the regression
+
 nematode_mods_sel <- nematode_mods %>%
-  unnest(r2) %>%
+  unnest(r2) %>% #to bring r2 out of the cell and bring outside to put in the main data set level
   arrange(r2) %>%
   group_by(resp_var) %>%
   filter(r2 == max(r2))
