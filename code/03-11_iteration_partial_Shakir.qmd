@@ -408,7 +408,7 @@ Now, let's unnest the r2 values, then only keep the largest r2 for each response
 #We want to keep just 1 model for each one of these 10 nematode variables, which is the model that has the highest R2 for that specific response variable. So, I did all of these 150 models and I want to screen what was the best model in terms of R2 for the regression
 
 nematode_mods_sel <- nematode_mods %>%
-  unnest(r2) %>% #to bring r2 out of the cell and bring outside to put in the main data set level
+  unnest(r2) %>% #to bring r2 out of the cell and bring outside to put in the main data set level #Anytime you have a nested column that you want to bring out to the main level of the data frame, you do an "unnest()" 
   arrange(r2) %>%
   group_by(resp_var) %>%
   filter(r2 == max(r2))
@@ -422,17 +422,18 @@ nematode_mods_sel
 
 nematode_mods_sel_plots <- nematode_mods_sel %>%
   # Making scatterplots with r2 in subtitle
-  mutate(splot = map2(data, r2,
-                     
+  mutate(splot = map2(data, r2, #When we have a nested structure, we have to use the map() function, which has to accompanied by a mutate() #"splot" stands for scatter plot (column name)
                      ~ggplot(data = .x,
                              aes(x =  exp_val,
                                  y = resp_val)
                              ) +
                        geom_point() +
-                       geom_smooth(method = "lm") +
+                       geom_smooth(method = "lm") + #We must specify (method = "lm") inside the geom_smooth()
                        labs(subtitle = paste("R2:", .y))
                      )) %>%
-  # Making scatterplots with r2 in subtitle, and correct x and y axis titles  
+  # Making scatterplots with r2 in subtitle, and correct x and y axis titles 
+  #Now we are iterating over 4 iterating elements: data, r2, resp_var, exp_var
+  #So, we will use the "pmap()" function, which allows us to bring in any number of iterating elements
   mutate(splot_better = pmap(list(.df = data,
                                   .r2 = r2,
                                   .rv = resp_var,
@@ -451,7 +452,8 @@ nematode_mods_sel_plots <- nematode_mods_sel %>%
                             )
                              ))
 
-nematode_mods_sel_plots$splot_better[1]
+#On a map() function, we have only 1 iterating element which is .x  
+#On a map2() function, we have 2 iterating elements where the 1st one is called .x, and the 2nd one is called .y. That is just the way map2() function works, just the syntax  
 
 
 ```
