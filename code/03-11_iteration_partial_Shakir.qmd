@@ -205,7 +205,7 @@ meancv(nematode_w$rndvi)
 
 # Important for Assignment 8 on Iteration
 
-In the previous "meancv()" function, x inside the function(x) was basically giving a vector, and by calling "meancv(nematode_w$rndvi)", we were giving the "rndvi" vector to the function i.e., we were not giving a data frame itselt, we were giving a column of that data frame already in a vector/column format. A slight variation of this is the following code chunk.
+In the previous "meancv()" function, x inside the function(x) was basically giving a vector, and by calling "meancv(nematode_w$rndvi)", we were giving the "rndvi" vector to the function i.e., we were not giving a data frame itself, we were giving a column of that data frame already in a vector/column format. A slight variation of this is the following code chunk.
 
 Note: Keyboard shortcut to create a new code chunk: Ctrl + Alt + i (in Windows); Cmd + Opt + i (in mac)
 
@@ -234,6 +234,18 @@ meancv2
 #"meancv" is expecting a vector (it is NOT expecting a data frame)
 
 ```
+```{r}
+
+meancv2(df = nematode_w, #df = name of our data frame #remains same
+        col = rndvi #Name of the column that we want to calculate #changes based on what we want to get #If we wanted to get the mean and CV of "sum_s" column, we would specify "sum_s" after "col = " argument
+        )
+
+#Difference between "meancv" and "meancv2" functions:
+#"meancv2" is expecting a data frame and is expecting a certain column from that data frame
+#"meancv" is expecting a vector (it is NOT expecting a data frame)
+
+```
+
 
 
 ```{r}

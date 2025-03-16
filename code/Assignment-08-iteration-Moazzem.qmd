@@ -127,8 +127,6 @@ boxplot_macon
 
 ```
 
-
-
 ## Q2 - Iterate over locations  
 On the step above you created a function to create boxplot for one location (one column in your original data set).  
 
