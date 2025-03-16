@@ -49,6 +49,7 @@ library(tidyr) # wrangling
 library(readr) # to export csv
 library(tidyverse) # for data wrangling and plotting
 library(knitr) # for figure displaying
+library(purrr)
 
 ```
 
@@ -113,7 +114,7 @@ myplot <- function(df, x, y) {
     geom_boxplot() +
     geom_jitter() +
     facet_grid(as.formula(paste("~", x))) +
-    labs(title = "Boxplot of K leaf concentration as a function of K rate",
+    labs(title = "Boxplot of K leaf concentration for location: Macon",
          x = "K rate (kgha)",
          y = "K leaf concentration")
 }
@@ -136,32 +137,32 @@ For that, use one of the functions in the `map` family from the purr package.
 When making your plots, make sure to add a title to represent which location is represented in each plot.  
 
 ```{r}
-# Load purrr (if not already loaded)
-library(purrr)
 
-# Get the unique locations from your data
+#Separation of locations
 locations <- unique(soyk_w$location)
 
-# Iterate over each location and create a plot
+#Iteration 
 plots_list <- map(locations, function(loc) {
-  # Filter the data for the current location
+  #Filtering by location
   df_loc <- soyk_w %>% dplyr::filter(location == loc)
-  
-  # Create the plot using the myplot function and add a title with the location
+  #Using "myplot" function over each
   p <- myplot(df_loc, "k_rate_kgha", "k_pct") +
     labs(title = paste("Boxplot of K leaf concentration for location:", loc))
-  
-  # Return the plot
+  #Return current plot
   p
 })
 
-# Display the list of plots (each plot corresponds to a location)
+# Displaying all plots 
 plots_list
 
 ```
 
+# Credit declaration  
+
+Help was taken from ChatGPT to complete this assignment
 
 # Submitting your work  
+
 Once you have developed all the code and answers, make sure to Render this quarto file.  
 
 **Notes on rendering**:  
