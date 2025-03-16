@@ -1,0 +1,188 @@
+---
+title: "Assignment 8 - Iteration"
+author: "Md Shakir Moazzem"  
+format:
+  html:
+    code-fold: true 
+    embed-resources: true
+    toc: true
+    number-sections: true
+    theme: cerulean
+---
+
+# Goal of this assignment  
+The goal of this assignment is for you to **apply different iteration concepts** learned in class to a new data set.  
+
+In specific, you will be asked to:  
+  - create a function to automate plot creation  
+  - apply this function to different parts of a dataset through the use of the map function.  
+
+# Instructions  
+  - Move this script into the `code` subfolder of your `08_iteration` project  
+  - Move the **01_soybeans.xlsx** data set into the `data` subfolder  
+  - On this script, fill your name under the `title` section of the YAML  
+  - On this script, you will be asked to:  
+    - Import the raw soybeans data set used in the `02_wrangling` project  
+    - Create a function to automate the creation of boxplots  
+    - Create a map workflow to apply your function to different locations in the data set  
+    
+# Code  
+Hereafter is where you will develop your code.  
+Remember to load any necessary packages and the data.    
+
+## Loading packages
+```{r Setup, message=F}
+# Installing packages
+#install.packages("readxl")
+#install.packages("janitor")
+#install.packages("dplyr")
+#install.packages("tidyr")
+#install.packages("readr")
+#install.packages("nlraa")
+#install.packages("ggplot2")
+
+# Loading packages (every time you open R)
+library(readxl) # to read excel files
+library(janitor) # to clean data; helps fix and standardize the column names
+library(dplyr) # wrangling
+library(tidyr) # wrangling
+library(readr) # to export csv
+library(tidyverse) # for data wrangling and plotting
+library(knitr) # for figure displaying
+
+```
+
+## Reading data
+```{r Reading data}
+
+soyk <- read_excel("../data/01_soybeans.xlsx")
+
+# Checking first rows
+soyk
+
+# View the data frame in a separate tab
+View(soyk)
+
+```
+
+## Data wrangling
+
+```{r data wrangling}
+
+soyk_w <- soyk %>% 
+  clean_names() %>% 
+  mutate(k_rate_kgha = k_rate_lbac*0.454/0.405,
+                  k_rate_kgha = round(k_rate_kgha, 0) 
+                  ) %>% 
+  mutate(k_rate_kgha = factor(k_rate_kgha)) %>%
+  pivot_longer(names_to = "location.k",
+                       values_to = "k_pct",
+                       cols = contains("k_pct")
+                       ) %>% 
+  separate(location.k, #without quotation marks
+                   into = c("location", "k", "pct")
+                   ) %>% 
+  dplyr::select(location, k_rate_kgha, k_pct) %>% 
+  arrange(location, k_rate_kgha) %>% 
+  group_by(location, k_rate_kgha)
+ 
+
+soyk_w
+
+
+```
+
+
+  
+## Q1 - Create a function  
+Here, you are asked to create a function.  
+The goal of this function is to create a boxplot of K leaf concentration as a function of K rates.    
+Name the function `myplot`.  
+The function inputs are:  
+  - df: the data set containing the columns needed for plotting  
+  - x: the column name inside df to be plotted on the x axis  
+  - y: the column name inside df to be plotted on the y axis  
+
+Once you create the function, make sure it works by applying it to one of the locations where K leaf concentration was collected.  
+
+```{r creating function}
+
+myplot <- function(df, x, y) {
+  ggplot(df, aes(x = x, 
+                 y = .data[[y]])) +
+    geom_boxplot() +
+    geom_jitter() +
+    facet_grid(as.formula(paste("~", x))) +
+    labs(title = "Boxplot of K leaf concentration as a function of K rate",
+         x = "K rate (kgha)",
+         y = "K leaf concentration")
+}
+
+
+# Example usage:
+boxplot_macon <- myplot(soyk_w %>% filter(location == "macon"), "k_rate_kgha", "k_pct")
+boxplot_macon
+
+
+```
+
+
+
+## Q2 - Iterate over locations  
+On the step above you created a function to create boxplot for one location (one column in your original data set).  
+
+Now, you are asked to apply this function to each location in the data set.  
+For that, use one of the functions in the `map` family from the purr package.  
+When making your plots, make sure to add a title to represent which location is represented in each plot.  
+
+```{r}
+# Load purrr (if not already loaded)
+library(purrr)
+
+# Get the unique locations from your data
+locations <- unique(soyk_w$location)
+
+# Iterate over each location and create a plot
+plots_list <- map(locations, function(loc) {
+  # Filter the data for the current location
+  df_loc <- soyk_w %>% dplyr::filter(location == loc)
+  
+  # Create the plot using the myplot function and add a title with the location
+  p <- myplot(df_loc, "k_rate_kgha", "k_pct") +
+    labs(title = paste("Boxplot of K leaf concentration for location:", loc))
+  
+  # Return the plot
+  p
+})
+
+# Display the list of plots (each plot corresponds to a location)
+plots_list
+
+```
+
+
+# Submitting your work  
+Once you have developed all the code and answers, make sure to Render this quarto file.  
+
+**Notes on rendering**:  
+
+- Make sure to render your work and inspect how the final html look like.  
+- If it does not look professional for whatever reason, then fix the issue, re-render it, recheck.  
+- Only send me your work once your html file looks professional.  
+  - **DO NOT** delete the file's heading levels (# and ##). They set up the proper heading 1 and 2 levels, and I use them to guide my grading.  
+  - If a given chunk is also outputting warnings or messages, inhibit this behavior by changing the chunk options `message` and `warning` to `FALSE` (I'll demo this in a moment).  
+  
+  - If, after rendered, 2 lines of text are connected and you wish to "break line" between them, add 2 extra spaces after the first one (I'lld demo this in a moment).  
+
+After rendering, an .html file will be created on your `code` folder.  
+
+Rename this file to `Assignment-08-iteration-LASTNAME.html`.    
+
+For ex., mine would be `Assignment-08-iteration-Bastos.html`.
+
+Submit your work by uploading the **html** file to **eLC Assigment #8 - Iteration** by Mar 18 11:59 pm.  
+  
+
+
+
+
