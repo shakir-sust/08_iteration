@@ -82,11 +82,11 @@ summary(nematode)
 
 ```{r density plot} 
 nematode %>% #we need to reshape this dataset from wide to long for density plots
-  pivot_longer(cols = mel_s:re) %>% #to create 'long' form from wide 'form' #we will have 43*16 = 688 columns that we pivoted into 'long' form
+  pivot_longer(cols = mel_s:re) %>% #we are doing pivot_longer just for plotting #to create 'long' form from wide 'form' #we will have 43*16 = 688 columns that we pivoted into 'long' form
   arrange(name) %>% #to arrange by 'name' column
-  ggplot(aes(x = value)) + #we feed the previous data right into "ggplot()"
+  ggplot(aes(x = value)) + #we feed the "value" from previous data right into "ggplot()"
   geom_density() +
-  facet_wrap(~name, scales = "free") #scales = "free": this argument auto-adjust the scales (on x-axis and y-axis) depending on the plot  #we facet by "name" column
+  facet_wrap(~name, scales = "free") #To facet by "name" #scales = "free": this argument auto-adjust the scales (on x-axis and y-axis) depending on the plot  #we facet by "name" column
 
 ```
 
